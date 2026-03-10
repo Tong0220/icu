@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIGC | Reimagine Our World</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 自定义样式用于极光效果和动画 -->
+    <style>
+        /* 平滑过渡 */
+        * {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 背景渐变 */
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+        }
+
+        /* 视图切换动画 */
+        .view-transition {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .view-exit {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+
+        .view-enter {
+            opacity: 0;
+            transform: translateY(-16px);
+        }
+
+        .view-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 按钮加载状态 */
+        .action-button.loading {
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 4px 30px rgba(251,146,60,0.15) !important;
+        }
+
+        .action-button.loading i {
+            color: #fed7aa !important; /* orange-200 */
+            filter: drop-shadow(0 0 3px rgba(251,146,60,0.3));
+        }
+
+        .action-button .spinner {
+            display: none;
+        }
+
+        .action-button.loading .spinner {
+            display: inline-block;
+        }
+
+        .action-button.loading .arrow {
+            display: none;
+        }
+
+        /* Level 2 工作台样式 */
+        .workspace-container {
+            min-height: calc(100vh - 120px);
+        }
+
+        .control-panel {
+            box-shadow: 0 20px 60px -15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .canvas-area {
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 离散滑块样式 - 黑色毛玻璃效果 */
+        .discrete-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px; /* 轨道高度 */
+            background: transparent; /* 透明，使用自定义轨道背景 */
+            border-radius: 2px; /* 圆角 */
+            outline: none;
+        }
+
+        .discrete-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.9); /* 深黑色背景 */
+            backdrop-filter: blur(8px); /* 毛玻璃效果 */
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* 更明显的玻璃边缘 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15) inset; /* 增强立体阴影 */
+            transition: all 0.2s ease;
+        }
+
+        .discrete-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            background: rgba(0, 0, 0, 1); /* 悬停时纯黑色 */
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+        }
+
+        .discrete-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.9); /* 深黑色背景 */
+            backdrop-filter: blur(8px); /* 毛玻璃效果 */
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* 更明显的玻璃边缘 */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15) inset; /* 增强立体阴影 */
+            transition: all 0.2s ease;
+        }
+
+        .discrete-slider::-moz-range-thumb:hover {
+            transform: scale(1.1);
+            background: rgba(0, 0, 0, 1); /* 悬停时纯黑色 */
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+        }
+
+        /* 分段控制器样式 */
+        .segmented-control {
+            display: flex;
+            background-color: #f1f5f9; /* slate-100 */
+            border-radius: 9999px;
+            padding: 4px;
+            position: relative;
+        }
+
+        .segmented-control-option {
+            flex: 1;
+            text-align: center;
+            padding: 10px 16px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #64748b; /* slate-500 */
+            position: relative;
+            z-index: 1;
+        }
+
+        .segmented-control-option:hover {
+            color: #334155; /* slate-700 */
+        }
+
+        .segmented-control-option.active {
+            color: #000000;
+            font-weight: 600; /* font-semibold */
+        }
+
+        .segmented-control-slider {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            height: calc(100% - 8px);
+            background-color: #ffffff;
+            border-radius: 9999px;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 0;
+        }
+
+        /* 模板卡片样式 */
+        .template-card {
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .template-card.selected {
+            border-color: #000000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 开关样式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #d1d5db;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #000000;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* 隐藏滚动条 */
+        .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;      /* Firefox */
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;              /* Chrome, Safari and Opera */
+        }
+    </style>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="font-sans antialiased">
+    <!-- 悬浮胶囊导航 -->
+    <nav class="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+        <div class="flex items-center gap-6 bg-white/40 backdrop-blur-2xl px-6 py-3 rounded-full border border-white/60 shadow-[inset_0_2px_4px_rgba(255,255,255,0.9)] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)]">
+            <div class="text-xl font-bold tracking-tight text-gray-800">UPDIS-AIGC</div>
+            <div class="flex gap-2">
+                <button class="px-5 py-2 rounded-full bg-white/60 text-gray-800 hover:text-gray-900 hover:bg-white/80 transition-all">灵感画廊</button>
+                <button class="px-5 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-all">工作台</button>
+                <button class="px-5 py-2 rounded-full bg-white/60 text-gray-800 hover:text-gray-900 hover:bg-white/80 transition-all">用户中心</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SPA主容器 -->
+    <main id="app" class="container mx-auto px-4 pt-32 pb-16">
+        <!-- 视图将由JavaScript动态渲染 -->
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // SPA状态管理
+        const appState = {
+            activeView: 'home', // 'home', 'white-model', 'lineart', 'inpainting', 'ideation'
+            currentScene: null,
+            isLoading: false,
+            workspaceState: {
+                activeTab: 'templates', // 'templates' 或 'prompts'
+                selectedTemplate: null,
+                promptText: '',
+                aiFreedom: 5, // 0-10，离散值：0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+                uploadedImage: null,
+                referenceImage: null,
+                resolution: '1.25', // 1.25, 2.25, 4, 8 百万像素
+                batchSize: 2, // 1, 2, 4 张
+                aspectRatio: '16:9', // 4:3, 16:9, 3:2, 1:1
+                orientation: 'horizontal' // horizontal, vertical
+            }
+        };
+
+        // 场景配置
+        const scenes = {
+            'white-model': {
+                id: 'white-model',
+                title: '白模直出渲染',
+                icon: 'fas fa-cube',
+                placeholder: '白模渲染预览',
+                description: '精准锁定体块与透视，一键赋予物理级真实材质与光影'
+            },
+            'lineart': {
+                id: 'lineart',
+                title: '线稿智能优化',
+                icon: 'fas fa-drafting-compass',
+                placeholder: '线稿优化预览',
+                description: '提取线条骨架，智能填色与配景推演'
+            },
+            'inpainting': {
+                id: 'inpainting',
+                title: '局部调整精修',
+                icon: 'fas fa-paint-brush',
+                placeholder: '精修预览',
+                description: '通过智能蒙版涂抹，提升特定区域表达'
+            },
+            'ideation': {
+                id: 'ideation',
+                title: '概念意向生成',
+                icon: 'fas fa-lightbulb',
+                placeholder: '概念预览',
+                description: '无底图约束的灵感引擎。获得未来主义建筑灵感'
+            }
+        };
+
+        // 模板数据
+        const templates = [
+            { id: 0, title: '规划', icon: 'fas fa-map', gradient: 'from-gray-100 to-gray-200' },
+            { id: 1, title: '建筑', icon: 'fas fa-building', gradient: 'from-gray-100 to-gray-200' },
+            { id: 2, title: '景观', icon: 'fas fa-tree', gradient: 'from-gray-100 to-gray-200' },
+            { id: 3, title: '室内', icon: 'fas fa-couch', gradient: 'from-gray-100 to-gray-200' }
+        ];
+
+        // DOM元素
+        const appContainer = document.getElementById('app');
+
+        // 渲染函数
+        function renderView() {
+            const { activeView, currentScene } = appState;
+
+            if (activeView === 'home') {
+                renderHomeView();
+            } else {
+                renderWorkspaceView(currentScene);
+            }
+        }
+
+        // 渲染首页
+        function renderHomeView() {
+            appContainer.innerHTML = `
+                <div id="home-view" class="view-transition max-w-6xl mx-auto">
+                    <!-- 标题区域 -->
+                    <div class="text-center mb-16">
+                        <h1 class="text-5xl md:text-6xl font-bold mb-6 text-gray-800 tracking-tight leading-tight">
+                            AI Answers the Physical World
+                        </h1>
+                        <p class="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                            由 UPDIS-AI 驱动的专业生成引擎，选择您的工作流开始创造
+                        </p>
+                    </div>
+
+                    <!-- 场景卡片网格 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${Object.values(scenes).map(scene => `
+                            <div class="group relative cursor-pointer" data-scene="${scene.id}">
+                                <div class="relative bg-white/40 backdrop-blur-2xl rounded-3xl p-6 border border-white/60 shadow-[inset_0_2px_4px_rgba(255,255,255,0.9)] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:scale-[1.02] overflow-hidden h-full flex flex-col">
+                                    <!-- 内容区域 -->
+                                    <div class="relative z-10 flex-1">
+                                        <!-- 占位图 -->
+                                        <div class="mb-4 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 h-56 flex items-center justify-center">
+                                            <div class="text-center">
+                                                <div class="text-5xl mb-3 text-gray-400">
+                                                    <i class="${scene.icon}"></i>
+                                                </div>
+                                                <div class="text-gray-500 font-medium">${scene.placeholder}</div>
+                                            </div>
+                                        </div>
+
+                                        <!-- 场景名称 -->
+                                        <h3 class="text-xl font-bold mb-2 text-gray-800 tracking-wide">${scene.title}</h3>
+
+                                        <!-- 场景描述 -->
+                                        <p class="text-gray-600 leading-relaxed text-sm">
+                                            ${scene.description}
+                                        </p>
+                                    </div>
+
+                                    <!-- 底部指示器 - 毛玻璃按钮 -->
+                                    <div class="relative z-10 mt-4">
+                                        <button class="action-button start-render-btn w-full py-4 rounded-2xl bg-gray-900 backdrop-blur-xl border border-white/20 hover:bg-gray-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),_0_4px_30px_rgba(139,92,246,0.15)] transition-all duration-300 hover:scale-[1.02] group/btn" data-scene="${scene.id}">
+                                            <div class="flex items-center justify-center gap-3">
+                                                <i class="fas fa-arrow-right arrow text-gray-300 text-lg transition-all duration-300 group-hover/btn:text-gray-200"></i>
+                                                <i class="fas fa-spinner spinner fa-spin text-lg"></i>
+                                                <span class="button-text text-white font-medium">开始渲染</span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // 绑定事件
+            bindHomeEvents();
+        }
+
+        // 渲染工作台视图
+        function renderWorkspaceView(scene) {
+            if (!scene) return;
+
+            const { workspaceState } = appState;
+            const isLineartScene = scene.id === 'lineart';
+            const isIdeationScene = scene.id === 'ideation';
+            const isInpaintingScene = scene.id === 'inpainting';
+            const sliderWidth = (workspaceState.aiFreedom / 10 * 100) + '%';
+
+            appContainer.innerHTML = `
+                <div id="workspace-view" class="view-transition workspace-container">
+                    <div class="flex flex-col lg:flex-row h-full gap-6">
+                        <!-- 左侧控制台 - 纯白毛玻璃 -->
+                        <div class="control-panel w-full lg:w-96 bg-slate-50/80 backdrop-blur-2xl rounded-[32px] shadow-2xl m-6 p-6 flex flex-col border border-white/80 h-[calc(100vh-3rem)]">
+                            <!-- A. 顶部导航 -->
+                            <div class="flex items-center justify-between mb-6">
+                                <button id="back-button" class="flex items-center gap-2 text-slate-500 hover:text-black hover:bg-slate-200/50 px-4 py-2 rounded-full transition-colors">
+                                    <i class="fas fa-arrow-left"></i>
+                                    <span>返回首页</span>
+                                </button>
+                            </div>
+
+                            <!-- 中间滚动区 -->
+                            <div class="flex-1 overflow-y-auto scrollbar-hide space-y-6">
+
+                            ${isInpaintingScene ? `
+                            <!-- Module A: 底图绘制 (Inpainting专用) -->
+                            <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                                <!-- 模块标题 -->
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i class="fas fa-layer-group text-slate-400 text-sm"></i>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">底图绘制</h2>
+                                </div>
+
+                                <!-- B. 底图上传区 -->
+                                <div class="mb-5">
+                                    <div class="bg-slate-50/50 border-2 border-dashed border-slate-200 rounded-3xl p-3 text-center cursor-pointer hover:bg-slate-100/50 transition-colors" id="base-upload-area">
+                                        <div class="text-3xl mb-2 text-gray-400">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                        </div>
+                                        <h3 class="text-sm font-medium text-slate-500 mb-1">拖拽或点击上传底图</h3>
+                                        <p class="text-xs text-slate-400 font-normal">支持 JPG, PNG, SVG 格式，最大 10MB</p>
+                                    </div>
+
+                                    <!-- 绘制蒙版入口按钮 -->
+                                    <div class="mt-4 w-full">
+                                        <button id="draw-mask-button" class="w-full bg-slate-800 text-white rounded-2xl shadow-md hover:bg-slate-900 hover:shadow-lg transition-all p-3 flex items-center justify-between">
+                                            <div class="flex flex-col items-start">
+                                                <div class="flex items-center gap-2 mb-1">
+                                                    <i class="fas fa-paint-brush"></i>
+                                                    <span class="font-medium">绘制局部蒙版</span>
+                                                </div>
+                                                <p class="text-xs text-slate-300 text-left">进入画板涂抹需修改的区域</p>
+                                            </div>
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                            ` : (!isIdeationScene ? `
+                            <!-- Module A: 底图解析与控制 (非Inpainting场景) -->
+                            <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100">
+                                <!-- 模块标题 -->
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i class="fas fa-layer-group text-slate-400 text-sm"></i>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">底图解析</h2>
+                                </div>
+
+                                <!-- B. 底图上传区 -->
+                                <div class="mb-5">
+                                    <div class="bg-gray-50/50 border-2 border-dashed border-gray-300 rounded-3xl p-4 text-center cursor-pointer hover:bg-gray-100/50 transition-colors" id="base-upload-area">
+                                        <div class="text-4xl mb-3 text-gray-400">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                        </div>
+                                        <h3 class="text-sm font-medium text-slate-500 mb-2">拖拽或点击上传底图</h3>
+                                        <p class="text-xs text-slate-400 font-normal">支持 JPG, PNG, SVG 格式，最大 10MB</p>
+                                    </div>
+
+                                    <!-- 控制程度 -->
+                                    <div class="mt-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h3 class="text-sm font-medium text-slate-500">控制程度</h3>
+                                            <div class="text-sm font-medium text-white bg-slate-800 px-2 py-1 rounded-md" id="ai-freedom-value">${workspaceState.aiFreedom}</div>
+                                        </div>
+
+                                        <!-- 离散滑块 -->
+                                        <div class="relative mb-2">
+                                            <!-- 滑块轨道背景 -->
+                                            <div class="h-1 bg-slate-300 rounded-full"></div>
+
+                                            <!-- 滑块填充进度 -->
+                                            <div class="h-1 bg-slate-700 rounded-full absolute top-0 left-0" id="slider-progress" style="width: ${(workspaceState.aiFreedom / 10 * 100)}%"></div>
+
+                                            <!-- 滑块 -->
+                                            <input
+                                                type="range"
+                                                id="ai-freedom-slider"
+                                                class="discrete-slider absolute top-0 left-0 w-full opacity-0 cursor-pointer"
+                                                min="0"
+                                                max="10"
+                                                step="1"
+                                                value="${workspaceState.aiFreedom}"
+                                            >
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                            ` : '')}
+
+                            <!-- Module B: 灵感参数 -->
+                            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100">
+                                <!-- 模块标题 -->
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i class="fas fa-lightbulb text-slate-400 text-sm"></i>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">灵感参数</h2>
+                                </div>
+
+                                <!-- C. 互斥的灵感输入区 -->
+                                <div class="flex flex-col flex-1">
+
+                                    <!-- 分段控制器 -->
+                                    <div class="segmented-control mb-3" id="inspiration-tabs">
+                                        <div class="segmented-control-slider" id="tab-slider" style="width: calc(50% - 8px); ${workspaceState.activeTab === 'templates' ? 'left: 4px;' : 'left: calc(50% + 4px);'}"></div>
+                                        <div class="segmented-control-option ${workspaceState.activeTab === 'templates' ? 'active' : ''}" data-tab="templates">
+                                            系统模板库
+                                        </div>
+                                        <div class="segmented-control-option ${workspaceState.activeTab === 'prompts' ? 'active' : ''}" data-tab="prompts">
+                                            自定义提示词
+                                        </div>
+                                    </div>
+
+                                    <!-- 模板库内容 (当activeTab为templates时显示) -->
+                                    <div id="templates-content" class="${workspaceState.activeTab === 'templates' ? '' : 'hidden'} flex flex-col flex-1 min-h-[250px] overflow-y-auto">
+                                        <div class="flex flex-col flex-1 space-y-4">
+                                            <!-- 模板预览区 -->
+                                            <div>
+                                                <h4 class="text-sm font-medium text-slate-500 mb-2">模板预览</h4>
+                                                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-3 min-h-[116px]">
+                                                    ${workspaceState.selectedTemplate !== null ? `
+                                                        <div class="flex flex-col items-center">
+                                                            <div class="w-full h-24 bg-gradient-to-br ${templates[workspaceState.selectedTemplate].gradient} rounded-xl mb-3 flex items-center justify-center">
+                                                                <i class="${templates[workspaceState.selectedTemplate].icon} text-3xl text-gray-600"></i>
+                                                            </div>
+                                                            <h5 class="font-medium text-gray-800 text-lg">${templates[workspaceState.selectedTemplate].title}</h5>
+                                                            <p class="text-xs text-slate-400 font-normal mt-1">已选模板，可点击下方卡片切换</p>
+                                                        </div>
+                                                    ` : `
+                                                        <div class="flex flex-col items-center py-4">
+                                                            <div class="text-3xl mb-2 text-gray-300">
+                                                                <i class="fas fa-image"></i>
+                                                            </div>
+                                                            <p class="text-slate-400 text-center text-xs font-normal">请从下方选择一个模板<br><span class="text-slate-400">点击模板卡片查看预览</span></p>
+                                                        </div>
+                                                    `}
+                                                </div>
+                                            </div>
+
+                                            <!-- 模板卡片网格 -->
+                                            <div class="flex-1">
+                                                <div class="grid grid-cols-2 gap-3">
+                                                    ${templates.map(template => `
+                                                        <div class="template-card rounded-2xl bg-gray-100 p-3 cursor-pointer flex items-center justify-center min-h-[50px] relative ${workspaceState.selectedTemplate === template.id ? 'selected' : ''}" data-template="${template.id}">
+                                                            <h4 class="font-medium text-gray-800 text-center">${template.title}</h4>
+                                                            ${workspaceState.selectedTemplate === template.id ? `
+                                                                <div class="absolute top-2 right-2 w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                                                                    <i class="fas fa-check text-white text-xs"></i>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                    `).join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 自定义提示词内容 (当activeTab为prompts时显示) -->
+                                    <div id="prompts-content" class="${workspaceState.activeTab === 'prompts' ? '' : 'hidden'} flex flex-col flex-1 min-h-[250px] overflow-y-auto">
+                                        <div class="flex flex-col flex-1 space-y-4">
+                                            <!-- 多模态提示词输入框 -->
+                                            <div class="flex flex-col flex-1">
+                                                <h4 class="text-sm font-medium text-slate-500 mb-2">多模态提示词</h4>
+                                                <div class="flex-1 relative overflow-hidden">
+                                                    <textarea
+                                                        id="prompt-input"
+                                                        class="w-full h-full bg-gray-50 rounded-3xl p-3 border border-gray-300 focus:border-gray-400 focus:ring-2 focus:ring-gray-200 outline-none resize-none"
+                                                        rows="4"
+                                                        placeholder="输入文字描述或上传图片生成提示词，支持中英文、图生文多模态输入"
+                                                    >${workspaceState.promptText}</textarea>
+
+
+                                                    <!-- 右下角：增强提示词按钮 -->
+                                                    <button class="absolute bottom-3 right-3 bg-black text-white text-sm py-2 px-4 rounded-full hover:bg-gray-800 transition-all" id="enhance-prompt-btn">
+                                                        <i class="fas fa-wand-magic-sparkles mr-1"></i>
+                                                        增强提示词
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- 参考图片上传 -->
+                                            <div>
+                                                <h4 class="text-sm font-medium text-slate-500 mb-2">参考意向图</h4>
+                                                <div class="flex items-center justify-center bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-5 text-center cursor-pointer hover:bg-gray-100 transition-colors min-h-[110px]" id="reference-upload-area">
+                                                    <div class="text-2xl mb-2 text-gray-400">
+                                                        <i class="fas fa-image"></i>
+                                                    </div>
+                                                    <p class="text-xs text-slate-400 font-normal">拖曳或上传参考图</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Module C: 输出规格 -->
+                            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                                <!-- 模块标题 -->
+                                <div class="flex items-center gap-2 mb-4">
+                                    <i class="fas fa-ruler-combined text-slate-400 text-sm"></i>
+                                    <h2 class="text-lg font-bold text-slate-900 tracking-tight">输出规格</h2>
+                                </div>
+
+                                <!-- 设置项容器 -->
+                                <div class="space-y-5">
+                                    <!-- 1. 图像分辨率 -->
+                                    <div>
+                                        <h4 class="text-sm font-medium text-slate-500 mb-3">图像分辨率</h4>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            ${isIdeationScene ? `
+                                            <button class="resolution-option ${workspaceState.resolution === '1.25' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="1.25">
+                                                1.25 百万像素
+                                            </button>
+                                            <button class="resolution-option ${workspaceState.resolution === '2.25' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="2.25">
+                                                2.25 百万像素
+                                            </button>
+                                            ` : `
+                                            <button class="resolution-option ${workspaceState.resolution === '1.25' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="1.25">
+                                                1.25 百万像素
+                                            </button>
+                                            <button class="resolution-option ${workspaceState.resolution === '2.25' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="2.25">
+                                                2.25 百万像素
+                                            </button>
+                                            <button class="resolution-option ${workspaceState.resolution === '4' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="4">
+                                                4 百万像素
+                                            </button>
+                                            <button class="resolution-option ${workspaceState.resolution === '8' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="8">
+                                                8 百万像素
+                                            </button>
+                                            `}
+                                        </div>
+                                    </div>
+
+                                    ${isIdeationScene ? `
+                                    <!-- 2. 图像比例 -->
+                                    <div>
+                                        <h4 class="text-sm font-medium text-slate-500 mb-3">图像比例</h4>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <button class="aspect-ratio-option ${workspaceState.aspectRatio === '4:3' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="4:3">
+                                                4:3
+                                            </button>
+                                            <button class="aspect-ratio-option ${workspaceState.aspectRatio === '16:9' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="16:9">
+                                                16:9
+                                            </button>
+                                            <button class="aspect-ratio-option ${workspaceState.aspectRatio === '3:2' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="3:2">
+                                                3:2
+                                            </button>
+                                            <button class="aspect-ratio-option ${workspaceState.aspectRatio === '1:1' ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} rounded-2xl py-3 text-xs font-medium transition-colors" data-value="1:1">
+                                                1:1
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+
+                                    ${isIdeationScene ? `
+                                    <!-- 3. 图像方向 -->
+                                    <div>
+                                        <h4 class="text-sm font-medium text-slate-500 mb-3">图像方向</h4>
+                                        <div class="bg-slate-100 p-1 rounded-full flex w-full">
+                                            <div class="orientation-option flex-1 text-center py-2 text-sm ${workspaceState.orientation === 'horizontal' ? 'bg-white text-slate-900 font-bold shadow-sm rounded-full' : 'text-slate-500 hover:text-slate-700'}" data-value="horizontal">
+                                                横向
+                                            </div>
+                                            <div class="orientation-option flex-1 text-center py-2 text-sm ${workspaceState.orientation === 'vertical' ? 'bg-white text-slate-900 font-bold shadow-sm rounded-full' : 'text-slate-500 hover:text-slate-700'}" data-value="vertical">
+                                                竖向
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ` : ''}
+
+                                    <!-- 4. 生成张数 -->
+                                    <div>
+                                        <h4 class="text-sm font-medium text-slate-500 mb-3">生成张数</h4>
+                                        <div class="bg-slate-100 p-1 rounded-full flex w-full">
+                                            <div class="batch-option flex-1 text-center py-2 text-sm text-slate-500 font-medium hover:text-slate-700" data-value="1">
+                                                1 张
+                                            </div>
+                                            <div class="batch-option flex-1 text-center py-2 text-sm bg-white text-slate-900 font-bold rounded-full shadow-sm" data-value="2">
+                                                2 张
+                                            </div>
+                                            <div class="batch-option flex-1 text-center py-2 text-sm text-slate-500 font-medium hover:text-slate-700" data-value="4">
+                                                4 张
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                            <!-- E. 底部生图按钮 -->
+                            <div class="pt-4 pb-6 bg-gradient-to-t from-white to-slate-50/80">
+                                <button class="w-full py-4 rounded-full bg-black text-white font-semibold hover:bg-gray-800 transition-all duration-300 hover:scale-[1.02] shadow-xl shadow-black/10 flex items-center justify-center gap-2" id="generate-button">
+                                    <i class="fas fa-bolt"></i>
+                                    <span>开始渲染</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 右侧画布区域 -->
+                        <div class="flex-1 bg-[#f4f4f5] rounded-[40px] m-6 ml-0 overflow-hidden relative canvas-area">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="text-center">
+                                    <div class="text-6xl mb-6 text-gray-300">
+                                        <i class="${scene.icon}"></i>
+                                    </div>
+                                    <div class="space-y-2 max-w-md mx-auto">
+                                        <div class="text-xl text-gray-500">在此预览您的设计方案</div>
+                                        <div class="text-xl text-gray-500">准备进行: <span class="font-semibold">${scene.title}</span></div>
+                                        <div class="text-xl text-gray-500">调整左侧参数，点击"开始渲染"生成效果图</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 图片显示区域 (上传后显示) -->
+                            <div id="canvas-image-container" class="absolute inset-0 ${workspaceState.uploadedImage ? '' : 'hidden'}">
+                                <img id="canvas-image" class="w-full h-full object-contain p-8" src="${workspaceState.uploadedImage || ''}" alt="渲染预览">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 绑定工作台事件
+            bindWorkspaceEvents();
+        }
+
+        // 视图切换动画
+        function transitionToView(newView, sceneId = null) {
+            const oldView = appContainer.querySelector('#home-view, #workspace-view');
+
+            if (oldView) {
+                // 退场动画
+                oldView.classList.add('view-exit');
+
+                setTimeout(() => {
+                    // 更新状态
+                    appState.activeView = newView;
+                    if (sceneId) {
+                        appState.currentScene = scenes[sceneId];
+                    }
+
+                    // 渲染新视图
+                    renderView();
+
+                    // 入场动画
+                    const newViewElement = appContainer.querySelector('#home-view, #workspace-view');
+                    if (newViewElement) {
+                        newViewElement.classList.add('view-enter');
+                        setTimeout(() => {
+                            newViewElement.classList.add('view-enter-active');
+                        }, 10);
+                    }
+                }, 300);
+            } else {
+                // 首次加载
+                appState.activeView = newView;
+                if (sceneId) {
+                    appState.currentScene = scenes[sceneId];
+                }
+                renderView();
+            }
+        }
+
+        // 绑定首页事件
+        function bindHomeEvents() {
+            // 开始渲染按钮
+            document.querySelectorAll('.start-render-btn').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const sceneId = this.getAttribute('data-scene');
+
+                    // 模拟加载状态
+                    if (!this.classList.contains('loading')) {
+                        this.classList.add('loading');
+                        const textSpan = this.querySelector('.button-text');
+                        const originalText = textSpan.textContent;
+                        textSpan.textContent = '进入中...';
+
+                        // 短暂延迟后切换视图
+                        setTimeout(() => {
+                            transitionToView(sceneId, sceneId);
+                        }, 500);
+                    }
+                });
+            });
+
+            // 卡片点击事件
+            document.querySelectorAll('.group[data-scene]').forEach(card => {
+                card.addEventListener('click', function() {
+                    const sceneId = this.getAttribute('data-scene');
+                    const button = this.querySelector('.start-render-btn');
+
+                    // 触发按钮点击
+                    if (button) {
+                        button.click();
+                    }
+                });
+            });
+
+            // 导航按钮事件
+            const navButtons = document.querySelectorAll('nav button');
+            navButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // 移除所有按钮的激活状态
+                    navButtons.forEach(btn => {
+                        btn.classList.remove('bg-black', 'text-white');
+                        btn.classList.add('bg-white/60', 'text-gray-800');
+                    });
+
+                    // 设置当前按钮为激活状态
+                    this.classList.remove('bg-white/60', 'text-gray-800');
+                    this.classList.add('bg-black', 'text-white');
+
+                    // 如果是工作台按钮且不在首页，则返回首页
+                    if (this.textContent.includes('工作台') && appState.activeView !== 'home') {
+                        transitionToView('home');
+                    }
+                });
+            });
+        }
+
+        // 绑定工作台事件
+        function bindWorkspaceEvents() {
+            // 返回按钮
+            const backButton = document.getElementById('back-button');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    transitionToView('home');
+                });
+            }
+
+            // 分段控制器切换
+            const tabOptions = document.querySelectorAll('.segmented-control-option');
+            if (tabOptions.length > 0) {
+                tabOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const tab = this.getAttribute('data-tab');
+                        if (tab && tab !== appState.workspaceState.activeTab) {
+                            // 更新状态
+                            appState.workspaceState.activeTab = tab;
+
+                            // 更新UI：移动滑块
+                            const slider = document.getElementById('tab-slider');
+                            if (slider) {
+                                slider.style.left = tab === 'templates' ? '4px' : 'calc(50% + 4px)';
+                            }
+
+                            // 更新选项激活状态
+                            tabOptions.forEach(opt => {
+                                if (opt.getAttribute('data-tab') === tab) {
+                                    opt.classList.add('active');
+                                } else {
+                                    opt.classList.remove('active');
+                                }
+                            });
+
+                            // 显示/隐藏内容区域
+                            const templatesContent = document.getElementById('templates-content');
+                            const promptsContent = document.getElementById('prompts-content');
+                            if (templatesContent && promptsContent) {
+                                if (tab === 'templates') {
+                                    templatesContent.classList.remove('hidden');
+                                    promptsContent.classList.add('hidden');
+                                } else {
+                                    templatesContent.classList.add('hidden');
+                                    promptsContent.classList.remove('hidden');
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            // 模板卡片选择
+            const templateCards = document.querySelectorAll('.template-card');
+            if (templateCards.length > 0) {
+                templateCards.forEach(card => {
+                    card.addEventListener('click', function() {
+                        const templateId = parseInt(this.getAttribute('data-template'));
+                        if (templateId === appState.workspaceState.selectedTemplate) {
+                            // 取消选择
+                            appState.workspaceState.selectedTemplate = null;
+                            this.classList.remove('selected');
+                        } else {
+                            // 选择新卡片
+                            appState.workspaceState.selectedTemplate = templateId;
+
+                            // 移除所有卡片的选中状态
+                            templateCards.forEach(c => c.classList.remove('selected'));
+
+                            // 添加当前卡片的选中状态
+                            this.classList.add('selected');
+                        }
+                    });
+                });
+            }
+
+            // 参考图片上传
+            const referenceUploadArea = document.getElementById('reference-upload-area');
+            if (referenceUploadArea) {
+                referenceUploadArea.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.jpg,.jpeg,.png';
+                    input.onchange = function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(event) {
+                                // 这里可以处理参考图片预览，目前仅更新状态
+                                appState.workspaceState.referenceImage = event.target.result;
+                                alert('参考图片已上传（演示功能）');
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    };
+                    input.click();
+                });
+            }
+
+
+            // 增强提示词按钮
+            const enhancePromptBtn = document.getElementById('enhance-prompt-btn');
+            if (enhancePromptBtn) {
+                enhancePromptBtn.addEventListener('click', function() {
+                    const originalHTML = this.innerHTML;
+                    const originalText = this.innerText;
+
+                    // 显示加载状态
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>润色中...';
+                    this.disabled = true;
+
+                    // 模拟AI润色过程
+                    setTimeout(() => {
+                        // 恢复按钮状态
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+
+                        // 模拟增强提示词（在实际应用中这里会调用API）
+                        const promptInput = document.getElementById('prompt-input');
+                        if (promptInput) {
+                            const currentText = promptInput.value;
+                            promptInput.value = currentText + ' (AI增强：添加了细节描述和专业术语)';
+                            // 更新状态
+                            appState.workspaceState.promptText = promptInput.value;
+                        }
+
+                        alert('提示词已增强！');
+                    }, 1500);
+                });
+            }
+
+            // 提示词输入框
+            const promptInput = document.getElementById('prompt-input');
+            if (promptInput) {
+                promptInput.addEventListener('input', function() {
+                    appState.workspaceState.promptText = this.value;
+                });
+            }
+
+            // 底图上传区
+            const baseUploadArea = document.getElementById('base-upload-area');
+            if (baseUploadArea) {
+                baseUploadArea.addEventListener('click', function() {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.jpg,.jpeg,.png,.svg';
+                    input.onchange = function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(event) {
+                                appState.workspaceState.uploadedImage = event.target.result;
+
+                                // 显示在右侧画布
+                                const canvasContainer = document.getElementById('canvas-image-container');
+                                const canvasImage = document.getElementById('canvas-image');
+                                if (canvasContainer && canvasImage) {
+                                    canvasImage.src = event.target.result;
+                                    canvasContainer.classList.remove('hidden');
+                                }
+
+                                alert('底图已上传，可在右侧画布预览');
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    };
+                    input.click();
+                });
+            }
+
+            // 控制程度滑块
+            const aiFreedomSlider = document.getElementById('ai-freedom-slider');
+            if (aiFreedomSlider) {
+                // 更新数值显示和进度条的函数
+                const updateSliderDisplay = (value) => {
+                    // 更新数值显示
+                    const valueDisplay = document.getElementById('ai-freedom-value');
+                    if (valueDisplay) {
+                        valueDisplay.textContent = value;
+                    }
+
+                    // 更新进度条宽度
+                    const progressBar = document.getElementById('slider-progress');
+                    if (progressBar) {
+                        progressBar.style.width = `${(value / 10 * 100)}%`;
+                    }
+                };
+
+                // 初始化显示
+                updateSliderDisplay(parseInt(aiFreedomSlider.value));
+
+                aiFreedomSlider.addEventListener('input', function() {
+                    const value = parseInt(this.value);
+                    appState.workspaceState.aiFreedom = value;
+                    updateSliderDisplay(value);
+                });
+            }
+
+
+            // 输出规格：分辨率选择
+            const resolutionOptions = document.querySelectorAll('.resolution-option');
+            if (resolutionOptions.length > 0) {
+                resolutionOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const value = this.getAttribute('data-value');
+                        appState.workspaceState.resolution = value;
+
+                        // 更新UI：移除所有选项的选中样式，为当前选项添加选中样式
+                        resolutionOptions.forEach(opt => {
+                            opt.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+                            opt.classList.add('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                        });
+
+                        this.classList.remove('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                        this.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+                    });
+                });
+            }
+
+            // 输出规格：图像比例选择
+            const aspectRatioOptions = document.querySelectorAll('.aspect-ratio-option');
+            if (aspectRatioOptions.length > 0) {
+                aspectRatioOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const value = this.getAttribute('data-value');
+                        appState.workspaceState.aspectRatio = value;
+
+                        // 更新UI：移除所有选项的选中样式，为当前选项添加选中样式
+                        aspectRatioOptions.forEach(opt => {
+                            opt.classList.remove('bg-slate-900', 'text-white', 'shadow-md');
+                            opt.classList.add('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                        });
+
+                        this.classList.remove('bg-slate-50', 'text-slate-600', 'hover:bg-slate-100');
+                        this.classList.add('bg-slate-900', 'text-white', 'shadow-md');
+                    });
+                });
+            }
+
+            // 输出规格：图像方向选择
+            const orientationOptions = document.querySelectorAll('.orientation-option');
+            if (orientationOptions.length > 0) {
+                orientationOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const value = this.getAttribute('data-value');
+                        appState.workspaceState.orientation = value;
+
+                        // 更新UI：移除所有选项的选中样式，为当前选项添加选中样式
+                        orientationOptions.forEach(opt => {
+                            opt.classList.remove('bg-white', 'text-slate-900', 'font-bold', 'shadow-sm', 'rounded-full');
+                            opt.classList.add('text-slate-500', 'hover:text-slate-700');
+                        });
+
+                        this.classList.remove('text-slate-500', 'hover:text-slate-700');
+                        this.classList.add('bg-white', 'text-slate-900', 'font-bold', 'shadow-sm', 'rounded-full');
+                    });
+                });
+            }
+
+            // 输出规格：生成张数选择
+            const batchOptions = document.querySelectorAll('.batch-option');
+            if (batchOptions.length > 0) {
+                batchOptions.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const value = parseInt(this.getAttribute('data-value'));
+                        appState.workspaceState.batchSize = value;
+
+                        // 更新UI：移除所有选项的选中样式，为当前选项添加选中样式
+                        batchOptions.forEach(opt => {
+                            opt.classList.remove('bg-white', 'text-slate-900', 'font-bold', 'shadow-sm', 'rounded-full');
+                            opt.classList.add('text-slate-500', 'hover:text-slate-700');
+                        });
+
+                        this.classList.remove('text-slate-500', 'hover:text-slate-700');
+                        this.classList.add('bg-white', 'text-slate-900', 'font-bold', 'shadow-sm', 'rounded-full');
+                    });
+                });
+            }
+
+            // Generate按钮
+            const generateButton = document.querySelector('.control-panel button.bg-black');
+            if (generateButton) {
+                generateButton.addEventListener('click', function() {
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+                    this.disabled = true;
+
+                    // 模拟生成过程
+                    setTimeout(() => {
+                        this.innerHTML = originalHTML;
+                        this.disabled = false;
+
+                        alert(`${appState.currentScene.title} 生成完成！\n\n（此为演示版本，实际生成功能开发中）`);
+                    }, 3000);
+                });
+            }
+        }
+
+        // 初始化
+        function init() {
+            // 初始渲染首页
+            renderView();
+
+            // 初始化导航激活状态
+            const workspaceButton = document.querySelector('nav button:nth-child(2)');
+            if (workspaceButton) {
+                workspaceButton.classList.remove('bg-white/60', 'text-gray-800');
+                workspaceButton.classList.add('bg-black', 'text-white');
+            }
+
+            // 监听URL变化 (简单路由)
+            window.addEventListener('popstate', function() {
+                // 这里可以添加基于URL的路由逻辑
+            });
+        }
+
+        // 启动应用
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
